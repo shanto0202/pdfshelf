@@ -1,0 +1,449 @@
+/*
+  PDFshelf Reader — mobile-first layout overrides
+  This file intentionally affects only .reader-* / .rt-* classes.
+*/
+
+:root {
+  --reader-bg: #2f3136;
+  --reader-bar: #26282d;
+  --reader-bar-2: #222429;
+  --reader-border: rgba(255,255,255,.09);
+  --reader-text: #f5f7f8;
+  --reader-muted: #aeb4bb;
+  --reader-control: rgba(255,255,255,.07);
+  --reader-control-active: rgba(255,255,255,.15);
+  --reader-top-h: 58px;
+  --reader-bottom-h: 62px;
+}
+
+html,
+body.reader-page {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: var(--reader-bg);
+}
+
+body.reader-page {
+  min-height: 100vh;
+  min-height: 100dvh;
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.reader-shell {
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: var(--reader-top-h) minmax(0, 1fr) auto;
+  overflow: hidden;
+  background: var(--reader-bg);
+}
+
+/* Top app bar */
+.reader-bar {
+  min-width: 0;
+  height: var(--reader-top-h);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 10px;
+  padding-left: max(10px, env(safe-area-inset-left));
+  padding-right: max(10px, env(safe-area-inset-right));
+  background: var(--reader-bar);
+  border-bottom: 1px solid var(--reader-border);
+  z-index: 50;
+}
+
+.reader-left,
+.reader-right {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.reader-left { flex: 1 1 auto; }
+.reader-right { flex: 0 0 auto; }
+
+.reader-icon-button {
+  width: 42px;
+  height: 42px;
+  min-width: 42px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--reader-border);
+  border-radius: 13px;
+  background: var(--reader-control);
+  color: var(--reader-text);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.reader-icon-button:active { background: var(--reader-control-active); }
+.reader-icon-button svg { width: 20px; height: 20px; }
+
+.reader-brand-icon {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  border-radius: 9px;
+}
+
+.reader-title {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.reader-title strong {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--reader-text);
+  font-size: 14px;
+  line-height: 1.2;
+  font-weight: 800;
+}
+
+.reader-title span {
+  display: block;
+  margin-top: 2px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--reader-muted);
+  font-size: 10px;
+  line-height: 1.2;
+}
+
+.reader-user-chip {
+  height: 42px;
+  padding: 4px 8px 4px 5px;
+  border: 1px solid var(--reader-border);
+  background: rgba(255,255,255,.045);
+}
+
+.reader-user-chip .avatar {
+  width: 31px;
+  height: 31px;
+  font-size: 11px;
+}
+
+.reader-user-chip strong { color: var(--reader-text); }
+.reader-user-chip span { color: var(--reader-muted); }
+
+/* PDF viewport */
+.reader-stage {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--reader-bg);
+}
+
+.reader-scroll {
+  position: absolute;
+  inset: 0;
+  display: block; /* Important: do not center a wider child with flex. */
+  overflow: auto;
+  padding: 12px 10px 28px;
+  padding-left: max(10px, env(safe-area-inset-left));
+  padding-right: max(10px, env(safe-area-inset-right));
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  touch-action: pan-x pan-y;
+  scrollbar-gutter: stable both-edges;
+}
+
+.reader-pages {
+  width: max-content;
+  min-width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  transform-origin: 0 0;
+}
+
+.pdf-page-wrap {
+  position: relative;
+  flex: 0 0 auto;
+  overflow: hidden;
+  margin: 0 auto;
+  background: #fff;
+  border-radius: 3px;
+  box-shadow: 0 5px 18px rgba(0,0,0,.28);
+}
+
+.pdf-page-wrap canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Loading and revoked-session overlays */
+.reader-loading {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: var(--reader-bg);
+}
+
+.reader-loading.hidden { display: none !important; }
+
+.loader-card {
+  width: min(360px, 100%);
+  text-align: center;
+}
+
+.loader-ring {
+  width: 40px;
+  height: 40px;
+  margin: 0 auto 14px;
+  border: 3px solid rgba(255,255,255,.13);
+  border-top-color: #24B1B1;
+  border-radius: 50%;
+  animation: spin .8s linear infinite;
+}
+
+.loader-card strong {
+  display: block;
+  color: var(--reader-text);
+  font-size: 14px;
+}
+
+.loader-card span {
+  display: block;
+  margin-top: 5px;
+  color: var(--reader-muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.watermark-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  pointer-events: none;
+  overflow: hidden;
+  opacity: .035;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-auto-rows: 135px;
+  transform: rotate(-12deg) scale(1.08);
+  transform-origin: center;
+}
+
+.watermark-item {
+  display: grid;
+  place-items: center;
+  color: #000;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: .07em;
+  white-space: nowrap;
+  text-transform: uppercase;
+}
+
+.session-alert {
+  position: absolute;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(18,19,22,.88);
+}
+
+.session-alert.hidden { display: none !important; }
+
+.session-alert-card {
+  width: min(420px,100%);
+  padding: 26px 22px;
+  border-radius: 20px;
+  background: #fff;
+  text-align: center;
+}
+
+.session-alert-card svg {
+  width: 40px;
+  height: 40px;
+  margin: 0 auto 14px;
+  color: var(--danger);
+}
+
+.session-alert-card h2 { margin: 0 0 8px; font-size: 20px; }
+.session-alert-card p { margin: 0 0 18px; color: var(--muted); font-size: 13px; line-height: 1.6; }
+
+/* Bottom control bar */
+.reader-toolbar {
+  min-width: 0;
+  min-height: var(--reader-bottom-h);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
+  padding-left: max(8px, env(safe-area-inset-left));
+  padding-right: max(8px, env(safe-area-inset-right));
+  background: var(--reader-bar-2);
+  border-top: 1px solid var(--reader-border);
+  z-index: 50;
+}
+
+.rt-group {
+  min-width: 0;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 13px;
+  background: rgba(255,255,255,.055);
+}
+
+.rt-btn {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 11px;
+  background: transparent;
+  color: var(--reader-text);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.rt-btn:active,
+.rt-btn.is-active { background: var(--reader-control-active); }
+.rt-btn:disabled { opacity: .32; cursor: default; }
+.rt-btn svg { width: 18px; height: 18px; }
+
+.rt-page-control {
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 0 7px;
+  color: var(--reader-text);
+  white-space: nowrap;
+}
+
+.rt-page-input {
+  width: 34px;
+  height: 30px;
+  margin: 0;
+  padding: 0 3px;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 8px;
+  outline: 0;
+  background: rgba(255,255,255,.07);
+  color: var(--reader-text);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  text-align: center;
+  appearance: textfield;
+}
+
+.rt-page-input::-webkit-inner-spin-button,
+.rt-page-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.rt-page-input:focus { border-color: rgba(36,177,177,.75); }
+
+.rt-page-separator,
+.rt-page-total,
+.rt-zoom-label {
+  color: var(--reader-text);
+  font-size: 11px;
+  font-weight: 800;
+  user-select: none;
+}
+
+.rt-page-total { min-width: 15px; }
+.rt-zoom-label { min-width: 38px; text-align: center; }
+
+.rt-divider {
+  width: 1px;
+  height: 24px;
+  flex: 0 0 1px;
+  margin: 0 1px;
+  background: rgba(255,255,255,.12);
+}
+
+/* Very narrow phones: keep every control inside the viewport. */
+@media (max-width: 374px) {
+  :root { --reader-top-h: 56px; }
+
+  .reader-bar { padding-left: 7px; padding-right: 7px; }
+  .reader-brand-icon { display: none; }
+  .reader-icon-button { width: 40px; height: 40px; min-width: 40px; }
+  .reader-title strong { font-size: 13px; }
+  .reader-title span { display: none; }
+
+  .reader-toolbar { gap: 2px; padding-left: 4px; padding-right: 4px; }
+  .rt-group { gap: 0; }
+  .rt-btn { width: 36px; min-width: 36px; height: 38px; }
+  .rt-page-control { padding: 0 3px; gap: 2px; }
+  .rt-page-input { width: 30px; }
+  .rt-zoom-label { display: none; }
+  .rt-divider { margin: 0; }
+}
+
+/* Phones / small tablets */
+@media (max-width: 700px) {
+  .reader-user-chip { display: none !important; }
+  .reader-scroll {
+    padding-top: 10px;
+    padding-bottom: 22px;
+  }
+}
+
+/* Desktop: use a little more breathing room, but same stable viewport model. */
+@media (min-width: 701px) {
+  :root {
+    --reader-top-h: 64px;
+    --reader-bottom-h: 64px;
+  }
+
+  .reader-bar { padding-left: 16px; padding-right: 16px; }
+  .reader-scroll { padding: 22px 18px 34px; }
+  .reader-pages { gap: 18px; }
+  .watermark-layer { grid-template-columns: repeat(4,1fr); grid-auto-rows: 150px; }
+  .reader-toolbar { gap: 8px; }
+  .rt-group { gap: 3px; }
+  .rt-btn:hover,
+  .reader-icon-button:hover { background: var(--reader-control-active); }
+}
+
+@media (orientation: landscape) and (max-height: 520px) {
+  :root {
+    --reader-top-h: 50px;
+    --reader-bottom-h: 54px;
+  }
+
+  .reader-bar { padding-top: 0; padding-bottom: 0; }
+  .reader-icon-button { width: 38px; height: 38px; min-width: 38px; }
+  .reader-brand-icon { width: 29px; height: 29px; }
+  .reader-title span { display: none; }
+  .reader-toolbar { padding-top: 5px; padding-bottom: calc(5px + env(safe-area-inset-bottom)); }
+  .rt-group { height: 42px; }
+}
