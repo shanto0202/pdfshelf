@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#007979" /><title>Admin — PDFshelf</title>
+  <link rel="icon" href="/assets/icon.svg" /><link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/assets/app.css" />
+</head>
+<body>
+  <main class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="/admin"><img src="/assets/icon.svg" alt="" /><div>PDFshelf<small>Control Center</small></div></a>
+      <div class="top-actions"><a class="btn btn-secondary btn-sm" href="/library">Reader view</a><div class="user-chip"><div class="avatar" id="adminInitial">A</div><div class="user-info"><strong id="adminName">Admin</strong><span>Administrator</span></div></div><button id="logoutButton" class="btn btn-secondary btn-icon" title="Sign out"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 17l5-5-5-5M15 12H3"/><path d="M14 3h5a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-5"/></svg></button></div>
+    </header>
+
+    <section class="admin-grid">
+      <nav class="side-nav glass">
+        <div class="nav-label">Workspace</div>
+        <button class="nav-btn active" data-tab="overview"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg>Overview</button>
+        <button class="nav-btn" data-tab="users"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="9" cy="8" r="4"/><path d="M2 20a7 7 0 0 1 14 0M17 11a4 4 0 0 1 5 4v5"/></svg>Users</button>
+        <button class="nav-btn" data-tab="pdfs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M6 2h8l4 4v16H6z"/><path d="M14 2v5h5M9 13h6M9 17h5"/></svg>PDFs</button>
+        <button class="nav-btn" data-tab="access"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="8" cy="15" r="4"/><path d="m11 12 8-8M15 4l5 5M16 7l-2-2"/></svg>Access</button>
+      </nav>
+
+      <div class="admin-content">
+        <section id="tab-overview" class="tab-view active">
+          <div id="statsGrid" class="stats-grid"></div>
+          <div class="panel glass">
+            <div class="panel-head"><div><h2>Business overview</h2><p>Your manually controlled PDF distribution system.</p></div><button class="btn btn-primary btn-sm" data-open-user>Create user</button></div>
+            <div class="panel-body"><div class="hero-meta"><span class="badge active">Single-session auth</span><span class="badge">Local private storage</span><span class="badge">Admin-managed access</span></div><p class="muted" style="font-size:11px;line-height:1.8;margin:18px 0 0">Use the Users tab to create customer credentials, PDFs to upload content, and Access to assign purchased books. New login automatically revokes a previous active session for that account.</p></div>
+          </div>
+        </section>
+
+        <section id="tab-users" class="tab-view">
+          <div class="panel glass"><div class="panel-head"><div><h2>Customers & accounts</h2><p>Create credentials, disable access, reset passwords or force logout.</p></div><button class="btn btn-primary btn-sm" data-open-user>+ New user</button></div><div class="table-wrap"><table class="table"><thead><tr><th>Account</th><th>Role</th><th>Status</th><th>Active session</th><th>Created</th><th>Actions</th></tr></thead><tbody id="usersTable"></tbody></table></div></div>
+        </section>
+
+        <section id="tab-pdfs" class="tab-view">
+          <div class="panel glass"><div class="panel-head"><div><h2>PDF catalogue</h2><p>Upload and manage the documents available for assignment.</p></div><button class="btn btn-primary btn-sm" data-open-pdf>+ Upload PDF</button></div><div class="table-wrap"><table class="table"><thead><tr><th>Document</th><th>File size</th><th>Assigned users</th><th>Status</th><th>Created</th><th>Actions</th></tr></thead><tbody id="pdfsTable"></tbody></table></div></div>
+        </section>
+
+        <section id="tab-access" class="tab-view">
+          <div class="access-grid">
+            <div class="panel glass"><div class="panel-head"><div><h2>Grant access</h2><p>Assign a purchased PDF to a customer.</p></div></div><div class="panel-body"><form id="grantForm" class="form-stack"><div class="field"><label>User</label><select id="grantUser" class="select" required></select></div><div class="field"><label>PDF</label><select id="grantPdf" class="select" required></select></div><button class="btn btn-primary" type="submit">Grant PDF access</button></form></div></div>
+            <div class="panel glass"><div class="panel-head"><div><h2>Active access</h2><p>Current user-to-PDF assignments.</p></div></div><div class="panel-body"><div id="grantList" class="grant-list"></div></div></div>
+          </div>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <div id="userModal" class="modal-backdrop hidden">
+    <div class="modal glass"><div class="modal-head"><div><h3>Create customer</h3><p>You choose the customer User ID and password after manual payment.</p></div><button class="btn btn-secondary btn-icon" data-close-modal>×</button></div><div class="modal-body"><form id="userForm" class="form-stack"><div class="field"><label>Customer name</label><input id="newName" class="input" placeholder="e.g. Rahim Ahmed" required /></div><div class="field"><label>User ID</label><input id="newUsername" class="input" placeholder="e.g. rahim01" required /></div><div class="field"><label>Password</label><input id="newPassword" class="input" type="text" placeholder="Minimum 8 characters" required /></div><div class="modal-actions"><button class="btn btn-secondary" type="button" data-close-modal>Cancel</button><button class="btn btn-primary" type="submit">Create account</button></div></form></div></div>
+  </div>
+
+  <div id="pdfModal" class="modal-backdrop hidden">
+    <div class="modal glass"><div class="modal-head"><div><h3>Upload PDF</h3><p>For this local MVP, individual files are limited to 20 MB.</p></div><button class="btn btn-secondary btn-icon" data-close-modal>×</button></div><div class="modal-body"><form id="pdfForm" class="form-stack"><div class="field"><label>Title</label><input id="pdfTitle" class="input" placeholder="e.g. Database Complete Notes" required /></div><div class="field"><label>Description</label><textarea id="pdfDescription" class="textarea" placeholder="Short description for the library card"></textarea></div><label class="upload-box"><input id="pdfFile" type="file" accept="application/pdf,.pdf" required /><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 16V4m0 0L8 8m4-4 4 4"/><path d="M5 13v6h14v-6"/></svg><strong id="pdfFileLabel">Choose a PDF file</strong><span>PDF only · maximum 20 MB</span></label><div class="modal-actions"><button class="btn btn-secondary" type="button" data-close-modal>Cancel</button><button id="uploadPdfButton" class="btn btn-primary" type="submit">Upload PDF</button></div></form></div></div>
+  </div>
+
+  <div id="passwordModal" class="modal-backdrop hidden">
+    <div class="modal glass"><div class="modal-head"><div><h3>Reset password</h3><p id="passwordModalCopy">Set a new password. Existing sessions will be signed out.</p></div><button class="btn btn-secondary btn-icon" data-close-modal>×</button></div><div class="modal-body"><form id="passwordForm" class="form-stack"><input id="passwordUserId" type="hidden" /><div class="field"><label>New password</label><input id="resetPassword" class="input" type="text" minlength="8" required /></div><div class="modal-actions"><button class="btn btn-secondary" type="button" data-close-modal>Cancel</button><button class="btn btn-primary" type="submit">Update password</button></div></form></div></div>
+  </div>
+
+  <div id="toastStack" class="toast-stack"></div>
+  <script src="/assets/common.js"></script><script src="/assets/admin.js"></script>
+</body>
+</html>

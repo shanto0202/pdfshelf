@@ -1,0 +1,26 @@
+LUMASHELF / PDF BUSINESS — FIRST RUN
+=====================================
+
+1) ZIP extract koro.
+2) pdf-business folder open koro.
+3) START_WINDOWS.bat double-click koro.
+   Alternative: VS Code terminal e `npm start`.
+4) Browser e open koro: http://localhost:3000
+
+ADMIN LOGIN
+User ID : admin
+Password: Admin@12345
+
+DEMO USER
+User ID : demo
+Password: Demo@12345
+
+IMPORTANT
+- Real use er age Admin -> Users theke admin password reset koro.
+- Manual payment pawar por Admin -> Users -> New User diye customer account banao.
+- Admin -> PDFs theke PDF upload koro.
+- Admin -> Access theke customer ke purchased PDF assign koro.
+- Same ID onno device/browser e login korle ager login automatically revoke hobe.
+
+NOTE
+Ei ZIP ta local fully-working MVP. Public Netlify production version e database/storage Supabase e move korte hobe. README.md te details ase.

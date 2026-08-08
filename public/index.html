@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#007979" />
+  <title>PDFshelf — Private Reading</title>
+  <link rel="icon" href="/assets/icon.svg" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/assets/app.css" />
+</head>
+<body>
+  <main class="login-page">
+    <section class="login-layout glass">
+      <div class="login-showcase">
+        <div class="login-copy">
+          <div class="brand" style="margin-bottom:34px">
+            <img src="/assets/icon.svg" alt="PDFshelf" />
+            <div>PDFshelf<small>Private Library</small></div>
+          </div>
+          <div class="kicker">Your books. Your access.</div>
+          <h1>Read beautifully.<br><span>Stay private.</span></h1>
+          <p>Sign in to open your personal reading space and pick up right where you left off.</p>
+        </div>
+      </div>
+      <div class="login-panel">
+        <div class="login-panel-inner">
+          <div class="brand"><img src="/assets/icon.svg" alt="" /><div>PDFshelf</div></div>
+          <h2>Welcome back</h2>
+          <p class="subtitle">Enter the User ID and password provided by the administrator.</p>
+          <form id="loginForm" class="login-form" autocomplete="on">
+            <div class="field">
+              <label for="username">User ID</label>
+              <div class="input-wrap">
+                <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>
+                <input class="input" id="username" name="username" autocomplete="username" placeholder="e.g. rahim01" required />
+              </div>
+            </div>
+            <div class="field">
+              <label for="password">Password</label>
+              <div class="input-wrap">
+                <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="10" width="16" height="10" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+                <input class="input" id="password" name="password" type="password" autocomplete="current-password" placeholder="Your password" required />
+                <button class="input-action" id="togglePassword" type="button" aria-label="Show password">Show</button>
+              </div>
+            </div>
+            <button id="loginButton" class="btn btn-primary" type="submit">Sign in <span>→</span></button>
+          </form>
+          <div class="login-foot">Access is managed manually. If your account is signed in elsewhere, this login will replace the previous session.</div>
+        </div>
+      </div>
+    </section>
+  </main>
+  <div id="toastStack" class="toast-stack"></div>
+  <script src="/assets/common.js"></script>
+  <script src="/assets/login.js"></script>
+</body>
+</html>

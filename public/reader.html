@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <meta name="theme-color" content="#0F1D1B" /><title>Reader — PDFshelf</title>
+  <link rel="icon" href="/assets/icon.svg" /><link rel="stylesheet" href="/assets/app.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+</head>
+<body class="reader-page">
+  <main class="reader-shell">
+    <header class="reader-bar">
+      <div class="reader-left"><button id="backButton" class="btn btn-secondary btn-icon" title="Back to library"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m15 18-6-6 6-6"/></svg></button><img src="/assets/icon.svg" alt="" width="30" height="30"/><div class="reader-title"><strong id="readerTitle">Opening document…</strong><span>Private reading session</span></div></div>
+      <div class="reader-right">
+        <button id="fullscreenButton" class="btn btn-secondary btn-icon" title="Fullscreen" aria-label="Fullscreen">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3"/></svg>
+        </button>
+        <div class="user-chip"><div class="avatar" id="readerInitial">U</div><div class="user-info"><strong id="readerUser">Reader</strong><span id="readerUsername">@user</span></div></div>
+      </div>
+    </header>
+    <section id="readerStage" class="reader-stage">
+      <div id="readerLoading" class="reader-loading"><div class="loader-card"><div class="loader-ring"></div><strong>Preparing your document</strong><span>Checking access and loading the secure reader…</span></div></div>
+      <div id="readerScroll" class="reader-scroll">
+        <div id="readerPages" class="reader-pages"></div>
+      </div>
+      <div id="watermarkLayer" class="watermark-layer"></div>
+      <div id="sessionAlert" class="session-alert hidden"><div class="session-alert-card glass"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 17h.01"/></svg><h2>Signed in elsewhere</h2><p>This account has been used to sign in from another browser or device. This reading session is no longer active.</p><button id="returnLogin" class="btn btn-primary">Return to sign in</button></div></div>
+    </section>
+    <footer class="reader-toolbar">
+      <div class="rt-group">
+        <button id="prevPageBtn" class="rt-btn" title="Previous page" aria-label="Previous page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button>
+        <span id="pageLabel" class="rt-page-label">— / —</span>
+        <button id="nextPageBtn" class="rt-btn" title="Next page" aria-label="Next page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></button>
+      </div>
+      <div class="rt-divider"></div>
+      <div class="rt-group">
+        <button id="zoomOutBtn" class="rt-btn" title="Zoom out" aria-label="Zoom out"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3M8 11h6"/></svg></button>
+        <span id="zoomLabel" class="rt-zoom-label">100%</span>
+        <button id="zoomInBtn" class="rt-btn" title="Zoom in" aria-label="Zoom in"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3M11 8v6M8 11h6"/></svg></button>
+      </div>
+      <div class="rt-divider"></div>
+      <div class="rt-group">
+        <button id="fitWidthBtn" class="rt-btn" title="Fit width" aria-label="Fit width"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 12l4-4M3 12l4 4M21 12l-4-4M21 12l-4 4"/></svg></button>
+      </div>
+    </footer>
+  </main>
+  <div id="toastStack" class="toast-stack"></div>
+  <script src="/assets/common.js"></script><script src="/assets/reader.js"></script>
+</body>
+</html>

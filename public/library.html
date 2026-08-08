@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#007979" /><title>My Library — PDFshelf</title>
+  <link rel="icon" href="/assets/icon.svg" /><link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/assets/app.css" />
+</head>
+<body>
+  <main class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="/library"><img src="/assets/icon.svg" alt="" /><div>PDFshelf<small>My Library</small></div></a>
+      <div class="top-actions">
+        <a id="adminLink" class="btn btn-secondary btn-sm hidden" href="/admin">Admin panel</a>
+        <div class="user-chip"><div class="avatar" id="userInitial">U</div><div class="user-info"><strong id="userName">Reader</strong><span id="userId">@user</span></div></div>
+        <button id="logoutButton" class="btn btn-secondary btn-icon" title="Sign out" aria-label="Sign out">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 17l5-5-5-5M15 12H3"/><path d="M14 3h5a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-5"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <section class="hero">
+      <article class="hero-main glass">
+        <div class="kicker">Personal reading space</div>
+        <h1 id="welcomeTitle">Your library is ready.</h1>
+        <p>Every title below has been individually assigned to your account. Open a book and continue reading in a clean, focused viewer.</p>
+      </article>
+    </section>
+
+    <div class="section-head">
+      <div><h2>Your books</h2><p id="bookCount">Loading your assigned library…</p></div>
+      <div class="search-box"><input id="bookSearch" class="input" placeholder="Search your library" /></div>
+    </div>
+    <section id="bookGrid" class="book-grid"></section>
+  </main>
+  <div id="toastStack" class="toast-stack"></div>
+  <script src="/assets/common.js"></script><script src="/assets/library.js"></script>
+</body>
+</html>
