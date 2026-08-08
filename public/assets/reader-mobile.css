@@ -447,3 +447,12 @@ body.reader-page {
   .reader-toolbar { padding-top: 5px; padding-bottom: calc(5px + env(safe-area-inset-bottom)); }
   .rt-group { height: 42px; }
 }
+
+/* Focal-point zoom polish */
+.reader-pages {
+  will-change: transform;
+}
+
+.reader-scroll.is-pinching {
+  overscroll-behavior: none;
+}

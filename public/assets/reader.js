@@ -98,7 +98,7 @@
         await document.exitFullscreen?.();
       }
     } catch (_) {
-      // Some mobile browsers do not expose fullscreen.
+      // Some mobile browsers intentionally do not expose fullscreen.
     }
   });
 
@@ -142,11 +142,13 @@
   }
 
   function availablePageWidth() {
+    // clientWidth is the CSS viewport width.
+    // Subtract real CSS padding instead of a hard-coded value.
     return Math.max(
       120,
       readerScroll.clientWidth -
-      horizontalReaderPadding() -
-      2
+        horizontalReaderPadding() -
+        2
     );
   }
 
@@ -265,6 +267,226 @@
     );
   }
 
+  function nearestPageAt(clientX, clientY) {
+    const pages = [
+      ...readerPages.querySelectorAll(
+        '.pdf-page-wrap'
+      )
+    ];
+
+    if (!pages.length) {
+      return null;
+    }
+
+    let best = null;
+    let bestDistance = Infinity;
+
+    for (const page of pages) {
+      const rect =
+        page.getBoundingClientRect();
+
+      const dx =
+        clientX < rect.left
+          ? rect.left - clientX
+          : clientX > rect.right
+            ? clientX - rect.right
+            : 0;
+
+      const dy =
+        clientY < rect.top
+          ? rect.top - clientY
+          : clientY > rect.bottom
+            ? clientY - rect.bottom
+            : 0;
+
+      const distance =
+        Math.hypot(dx, dy);
+
+      if (
+        distance <
+        bestDistance
+      ) {
+        best = {
+          page,
+          rect
+        };
+
+        bestDistance =
+          distance;
+
+        if (
+          distance === 0
+        ) {
+          break;
+        }
+      }
+    }
+
+    return best;
+  }
+
+  // Capture the exact PDF point currently underneath
+  // a screen coordinate.
+  //
+  // We store the point as a normalized location inside
+  // one rendered PDF page, so the same document point
+  // can be restored after rendering at another scale.
+  function captureZoomAnchor(
+    clientX,
+    clientY
+  ) {
+    const scrollRect =
+      readerScroll.getBoundingClientRect();
+
+    const hit =
+      nearestPageAt(
+        clientX,
+        clientY
+      );
+
+    if (!hit) {
+      return null;
+    }
+
+    const {
+      page,
+      rect
+    } = hit;
+
+    return {
+      pageNumber:
+        Number(
+          page.dataset.page
+        ),
+
+      pageX:
+        clamp(
+          (clientX - rect.left) /
+            Math.max(
+              1,
+              rect.width
+            ),
+          0,
+          1
+        ),
+
+      pageY:
+        clamp(
+          (clientY - rect.top) /
+            Math.max(
+              1,
+              rect.height
+            ),
+          0,
+          1
+        ),
+
+      viewportX:
+        clamp(
+          clientX -
+            scrollRect.left,
+          0,
+          scrollRect.width
+        ),
+
+      viewportY:
+        clamp(
+          clientY -
+            scrollRect.top,
+          0,
+          scrollRect.height
+        )
+    };
+  }
+
+  function captureViewportCenterAnchor() {
+    const rect =
+      readerScroll.getBoundingClientRect();
+
+    return captureZoomAnchor(
+      rect.left +
+        rect.width / 2,
+
+      rect.top +
+        rect.height / 2
+    );
+  }
+
+  function restoreZoomAnchor(anchor) {
+    if (!anchor) {
+      return false;
+    }
+
+    const page =
+      getPageElement(
+        anchor.pageNumber
+      );
+
+    if (!page) {
+      return false;
+    }
+
+    const scrollRect =
+      readerScroll.getBoundingClientRect();
+
+    const pageRect =
+      page.getBoundingClientRect();
+
+    const actualViewportX =
+      pageRect.left -
+      scrollRect.left +
+      pageRect.width *
+        anchor.pageX;
+
+    const actualViewportY =
+      pageRect.top -
+      scrollRect.top +
+      pageRect.height *
+        anchor.pageY;
+
+    const desiredScrollLeft =
+      readerScroll.scrollLeft +
+      (
+        actualViewportX -
+        anchor.viewportX
+      );
+
+    const desiredScrollTop =
+      readerScroll.scrollTop +
+      (
+        actualViewportY -
+        anchor.viewportY
+      );
+
+    readerScroll.scrollLeft =
+      clamp(
+        desiredScrollLeft,
+        0,
+        Math.max(
+          0,
+          readerScroll.scrollWidth -
+            readerScroll.clientWidth
+        )
+      );
+
+    readerScroll.scrollTop =
+      clamp(
+        desiredScrollTop,
+        0,
+        Math.max(
+          0,
+          readerScroll.scrollHeight -
+            readerScroll.clientHeight
+        )
+      );
+
+    setCurrentPage(
+      anchor.pageNumber
+    );
+
+    return true;
+  }
+
   function scrollToPage(
     pageNumber,
     behavior = 'smooth'
@@ -278,8 +500,13 @@
     const target =
       getPageElement(number);
 
-    if (!target) return;
+    if (!target) {
+      return;
+    }
 
+    // Only scroll the internal PDF viewport.
+    // scrollIntoView can move the whole document
+    // in some mobile browsers.
     const top = Math.max(
       0,
       target.offsetTop - 8
@@ -287,7 +514,8 @@
 
     readerScroll.scrollTo({
       top,
-      left: readerScroll.scrollLeft,
+      left:
+        readerScroll.scrollLeft,
       behavior
     });
 
@@ -298,21 +526,29 @@
     scale,
     options = {}
   ) {
-    if (!pdfDoc) return;
+    if (!pdfDoc) {
+      return;
+    }
 
-    const preservePage = clamp(
-      Number(
-        options.preservePage ||
-        currentPage
-      ) || 1,
-      1,
-      pageCount
-    );
+    const preservePage =
+      clamp(
+        Number(
+          options.preservePage ||
+            currentPage
+        ) || 1,
+        1,
+        pageCount
+      );
+
+    const zoomAnchor =
+      options.anchor ||
+      null;
 
     const previousScrollLeft =
       readerScroll.scrollLeft;
 
-    const token = ++renderToken;
+    const token =
+      ++renderToken;
 
     const mobile =
       window.matchMedia(
@@ -320,7 +556,9 @@
       ).matches;
 
     const dpr = Math.min(
-      window.devicePixelRatio || 1,
+      window.devicePixelRatio ||
+        1,
+
       mobile
         ? MOBILE_DPR_CAP
         : DESKTOP_DPR_CAP
@@ -328,20 +566,28 @@
 
     disconnectPageObserver();
 
-    readerPages.style.transform = '';
-    readerPages.innerHTML = '';
+    readerPages.style.transform =
+      '';
+
+    readerPages.innerHTML =
+      '';
 
     for (
       let number = 1;
       number <= pageCount;
       number += 1
     ) {
-      if (token !== renderToken) {
+      if (
+        token !==
+        renderToken
+      ) {
         return;
       }
 
       const page =
-        await pdfDoc.getPage(number);
+        await pdfDoc.getPage(
+          number
+        );
 
       const viewport =
         page.getViewport({
@@ -349,7 +595,9 @@
         });
 
       const wrap =
-        document.createElement('div');
+        document.createElement(
+          'div'
+        );
 
       wrap.className =
         'pdf-page-wrap';
@@ -368,21 +616,27 @@
         )}px`;
 
       const canvas =
-        document.createElement('canvas');
+        document.createElement(
+          'canvas'
+        );
 
-      canvas.width = Math.max(
-        1,
-        Math.floor(
-          viewport.width * dpr
-        )
-      );
+      canvas.width =
+        Math.max(
+          1,
+          Math.floor(
+            viewport.width *
+              dpr
+          )
+        );
 
-      canvas.height = Math.max(
-        1,
-        Math.floor(
-          viewport.height * dpr
-        )
-      );
+      canvas.height =
+        Math.max(
+          1,
+          Math.floor(
+            viewport.height *
+              dpr
+          )
+        );
 
       canvas.style.width =
         `${Math.ceil(
@@ -416,49 +670,76 @@
         0
       );
 
-      wrap.appendChild(canvas);
-      readerPages.appendChild(wrap);
+      wrap.appendChild(
+        canvas
+      );
+
+      readerPages.appendChild(
+        wrap
+      );
 
       await page.render({
-        canvasContext: context,
+        canvasContext:
+          context,
         viewport
       }).promise;
     }
 
-    if (token !== renderToken) {
+    if (
+      token !==
+      renderToken
+    ) {
       return;
     }
 
-    requestAnimationFrame(() => {
-      const target =
-        getPageElement(
-          preservePage
-        );
-
-      if (target) {
-        readerScroll.scrollTop =
-          Math.max(
-            0,
-            target.offsetTop - 8
+    // Wait until layout is calculated before restoring
+    // the focal document point.
+    requestAnimationFrame(
+      () => {
+        const anchored =
+          restoreZoomAnchor(
+            zoomAnchor
           );
+
+        if (!anchored) {
+          const target =
+            getPageElement(
+              preservePage
+            );
+
+          if (target) {
+            readerScroll.scrollTop =
+              Math.max(
+                0,
+                target.offsetTop -
+                  8
+              );
+          }
+
+          readerScroll.scrollLeft =
+            fitMode
+              ? 0
+              : clamp(
+                  previousScrollLeft,
+                  0,
+                  Math.max(
+                    0,
+                    readerScroll.scrollWidth -
+                      readerScroll.clientWidth
+                  )
+                );
+        }
+
+        readerPages.style.transform =
+          '';
+
+        readerPages.style.transformOrigin =
+          '0 0';
+
+        observePages();
+        updatePageUI();
       }
-
-      readerScroll.scrollLeft =
-        fitMode
-          ? 0
-          : clamp(
-            previousScrollLeft,
-            0,
-            Math.max(
-              0,
-              readerScroll.scrollWidth -
-              readerScroll.clientWidth
-            )
-          );
-
-      observePages();
-      updatePageUI();
-    });
+    );
   }
 
   async function setScale(
@@ -468,9 +749,10 @@
     const nextScale =
       clampScale(scale);
 
-    fitMode = Boolean(
-      options.fit
-    );
+    fitMode =
+      Boolean(
+        options.fit
+      );
 
     currentScale =
       nextScale;
@@ -482,7 +764,11 @@
       {
         preservePage:
           options.preservePage ||
-          currentPage
+          currentPage,
+
+        anchor:
+          options.anchor ||
+          null
       }
     );
   }
@@ -498,6 +784,7 @@
       calculateFitScale(),
       {
         fit: true,
+
         preservePage:
           options.preservePage ||
           currentPage
@@ -510,10 +797,13 @@
     () => {
       setScale(
         currentScale +
-        ZOOM_STEP,
+          ZOOM_STEP,
         {
           preservePage:
-            currentPage
+            currentPage,
+
+          anchor:
+            captureViewportCenterAnchor()
         }
       );
     }
@@ -524,10 +814,13 @@
     () => {
       setScale(
         currentScale -
-        ZOOM_STEP,
+          ZOOM_STEP,
         {
           preservePage:
-            currentPage
+            currentPage,
+
+          anchor:
+            captureViewportCenterAnchor()
         }
       );
     }
@@ -562,17 +855,21 @@
   );
 
   function commitPageInput() {
-    const requested = clamp(
-      parseInt(
-        pageNumberInput.value,
-        10
-      ) || currentPage,
-      1,
-      Math.max(
+    const requested =
+      clamp(
+        parseInt(
+          pageNumberInput.value,
+          10
+        ) ||
+          currentPage,
+
         1,
-        pageCount
-      )
-    );
+
+        Math.max(
+          1,
+          pageCount
+        )
+      );
 
     pageNumberInput.value =
       String(requested);
@@ -593,13 +890,22 @@
     'keydown',
     (event) => {
       if (
-        event.key === 'Enter'
+        event.key ===
+        'Enter'
       ) {
         event.preventDefault();
         commitPageInput();
       }
     }
   );
+
+  // ---------------------------------------
+  // DESKTOP FOCAL-POINT ZOOM
+  // ---------------------------------------
+  //
+  // Ctrl/Cmd + wheel:
+  // the exact PDF point underneath the mouse
+  // remains underneath the mouse after zoom.
 
   readerScroll.addEventListener(
     'wheel',
@@ -615,6 +921,12 @@
 
       event.preventDefault();
 
+      const anchor =
+        captureZoomAnchor(
+          event.clientX,
+          event.clientY
+        );
+
       const direction =
         event.deltaY > 0
           ? -1
@@ -622,10 +934,12 @@
 
       setScale(
         currentScale +
-        direction * 0.1,
+          direction * 0.1,
         {
           preservePage:
-            currentPage
+            currentPage,
+
+          anchor
         }
       );
     },
@@ -634,11 +948,24 @@
     }
   );
 
+  // ---------------------------------------
+  // MOBILE PINCH ZOOM
+  // ---------------------------------------
+  //
+  // The PDF coordinate between the two fingers
+  // becomes the focal point.
+  //
+  // Moving both fingers while pinching also pans
+  // that focal point naturally.
+
+  let pinchJustEndedAt = 0;
+
   readerScroll.addEventListener(
     'touchstart',
     (event) => {
       if (
-        event.touches.length !== 2
+        event.touches.length !==
+        2
       ) {
         return;
       }
@@ -646,13 +973,32 @@
       const [a, b] =
         event.touches;
 
+      const midX =
+        (
+          a.clientX +
+          b.clientX
+        ) / 2;
+
+      const midY =
+        (
+          a.clientY +
+          b.clientY
+        ) / 2;
+
+      const pagesRect =
+        readerPages.getBoundingClientRect();
+
       pinchState = {
         startDistance:
-          Math.hypot(
-            a.clientX -
-            b.clientX,
-            a.clientY -
-            b.clientY
+          Math.max(
+            1,
+            Math.hypot(
+              a.clientX -
+                b.clientX,
+
+              a.clientY -
+                b.clientY
+            )
           ),
 
         startScale:
@@ -661,9 +1007,38 @@
         targetScale:
           currentScale,
 
+        startMidX:
+          midX,
+
+        startMidY:
+          midY,
+
+        lastMidX:
+          midX,
+
+        lastMidY:
+          midY,
+
         page:
-          currentPage
+          currentPage,
+
+        anchor:
+          captureZoomAnchor(
+            midX,
+            midY
+          ),
+
+        originX:
+          midX -
+          pagesRect.left,
+
+        originY:
+          midY -
+          pagesRect.top
       };
+
+      readerPages.style.transformOrigin =
+        `${pinchState.originX}px ${pinchState.originY}px`;
     },
     {
       passive: true
@@ -675,7 +1050,8 @@
     (event) => {
       if (
         !pinchState ||
-        event.touches.length !== 2
+        event.touches.length !==
+          2
       ) {
         return;
       }
@@ -685,40 +1061,67 @@
       const [a, b] =
         event.touches;
 
+      const midX =
+        (
+          a.clientX +
+          b.clientX
+        ) / 2;
+
+      const midY =
+        (
+          a.clientY +
+          b.clientY
+        ) / 2;
+
       const distance =
         Math.hypot(
           a.clientX -
-          b.clientX,
+            b.clientX,
+
           a.clientY -
-          b.clientY
+            b.clientY
         );
 
       const ratio =
         distance /
-        Math.max(
-          1,
-          pinchState.startDistance
-        );
+        pinchState.startDistance;
 
       const targetScale =
         clampScale(
           pinchState.startScale *
-          ratio
+            ratio
         );
 
       const previewRatio =
         targetScale /
         pinchState.startScale;
 
+      const moveX =
+        midX -
+        pinchState.startMidX;
+
+      const moveY =
+        midY -
+        pinchState.startMidY;
+
       pinchState.targetScale =
         targetScale;
 
+      pinchState.lastMidX =
+        midX;
+
+      pinchState.lastMidY =
+        midY;
+
+      // Live CSS preview while finger is moving.
+      // This avoids expensive PDF.js rerendering every frame.
       readerPages.style.transform =
-        `scale(${previewRatio})`;
+        `translate3d(${moveX}px, ${moveY}px, 0) scale(${previewRatio})`;
 
       zoomLabel.textContent =
         `${Math.round(
-          targetScale * 100
+          targetScale *
+            100
         )}%`;
     },
     {
@@ -742,15 +1145,54 @@
       const preservePage =
         pinchState.page;
 
+      const anchor =
+        pinchState.anchor;
+
+      // The document point originally between the fingers
+      // should finish underneath the FINAL midpoint.
+      //
+      // This is what gives us zoom + two-finger panning.
+      if (anchor) {
+        const scrollRect =
+          readerScroll.getBoundingClientRect();
+
+        anchor.viewportX =
+          clamp(
+            pinchState.lastMidX -
+              scrollRect.left,
+
+            0,
+
+            scrollRect.width
+          );
+
+        anchor.viewportY =
+          clamp(
+            pinchState.lastMidY -
+              scrollRect.top,
+
+            0,
+
+            scrollRect.height
+          );
+      }
+
       pinchState = null;
+
+      pinchJustEndedAt =
+        Date.now();
 
       readerPages.style.transform =
         '';
 
+      readerPages.style.transformOrigin =
+        '0 0';
+
       setScale(
         finalScale,
         {
-          preservePage
+          preservePage,
+          anchor
         }
       );
     },
@@ -759,13 +1201,18 @@
     }
   );
 
+  // ---------------------------------------
+  // DOUBLE TAP FOCAL ZOOM
+  // ---------------------------------------
+
   let lastTapAt = 0;
 
   readerScroll.addEventListener(
     'touchend',
     (event) => {
       if (
-        event.touches.length > 0 ||
+        event.touches.length >
+          0 ||
         pinchState
       ) {
         return;
@@ -774,20 +1221,47 @@
       const now =
         Date.now();
 
+      // Prevent pinch touchend from accidentally
+      // triggering double tap.
       if (
         now -
-        lastTapAt <
+          pinchJustEndedAt <
+        350
+      ) {
+        lastTapAt = 0;
+        return;
+      }
+
+      const touch =
+        event.changedTouches?.[0];
+
+      if (!touch) {
+        return;
+      }
+
+      if (
+        now -
+          lastTapAt <
         290
       ) {
+        const anchor =
+          captureZoomAnchor(
+            touch.clientX,
+            touch.clientY
+          );
+
         if (fitMode) {
           setScale(
             Math.min(
               MAX_SCALE,
-              currentScale * 1.7
+              currentScale *
+                1.7
             ),
             {
               preservePage:
-                currentPage
+                currentPage,
+
+              anchor
             }
           );
         } else {
@@ -796,6 +1270,9 @@
               currentPage
           });
         }
+
+        lastTapAt = 0;
+        return;
       }
 
       lastTapAt = now;
@@ -805,45 +1282,65 @@
     }
   );
 
+  // ---------------------------------------
+  // RESPONSIVE FIT
+  // ---------------------------------------
+  //
+  // Keep fit-to-width properly fitted after:
+  // - phone rotation
+  // - browser chrome resize
+  // - tablet/Desktop resize
+
   const resizeObserver =
-    new ResizeObserver(() => {
-      if (
-        !pdfDoc ||
-        !fitMode
-      ) {
-        return;
-      }
+    new ResizeObserver(
+      () => {
+        if (
+          !pdfDoc ||
+          !fitMode
+        ) {
+          return;
+        }
 
-      clearTimeout(
-        resizeTimer
-      );
+        clearTimeout(
+          resizeTimer
+        );
 
-      resizeTimer =
-        setTimeout(() => {
-          const next =
-            calculateFitScale();
+        resizeTimer =
+          setTimeout(
+            () => {
+              const next =
+                calculateFitScale();
 
-          if (
-            Math.abs(
-              next -
-              currentScale
-            ) > 0.01
-          ) {
-            setScale(
-              next,
-              {
-                fit: true,
-                preservePage:
-                  currentPage
+              if (
+                Math.abs(
+                  next -
+                    currentScale
+                ) >
+                0.01
+              ) {
+                setScale(
+                  next,
+                  {
+                    fit: true,
+
+                    preservePage:
+                      currentPage
+                  }
+                );
               }
-            );
-          }
-        }, 120);
-    });
+            },
+            120
+          );
+      }
+    );
 
   resizeObserver.observe(
     readerScroll
   );
+
+  // ---------------------------------------
+  // LOAD PDF
+  // ---------------------------------------
 
   try {
     const library =
@@ -853,7 +1350,8 @@
 
     const book =
       (
-        library.items || []
+        library.items ||
+        []
       ).find(
         (item) =>
           item.id === id
@@ -861,7 +1359,8 @@
 
     if (
       !book &&
-      user.role !== 'ADMIN'
+      user.role !==
+        'ADMIN'
     ) {
       throw new Error(
         'This PDF is not assigned to your account.'
@@ -876,8 +1375,9 @@
       'PDFshelf reader';
 
     document.title =
-      `${book?.title ||
-      'Reader'
+      `${
+        book?.title ||
+        'Reader'
       } — PDFshelf`;
 
     const response =
@@ -897,13 +1397,16 @@
       );
 
     if (
-      response.status === 401
+      response.status ===
+      401
     ) {
       showRevoked();
       return;
     }
 
-    if (!response.ok) {
+    if (
+      !response.ok
+    ) {
       const data =
         await response
           .json()
@@ -913,7 +1416,7 @@
 
       throw new Error(
         data?.message ||
-        'Unable to open the PDF.'
+          'Unable to open the PDF.'
       );
     }
 
@@ -966,15 +1469,19 @@
   } catch (error) {
     readerLoading.innerHTML = `
       <div class="loader-card">
-        <strong>Unable to open this document</strong>
+
+        <strong>
+          Unable to open this document
+        </strong>
 
         <span>
           ${window.Shelf.escapeHtml(
-      error.message
-    )}
+            error.message
+          )}
         </span>
 
         <div style="margin-top:16px">
+
           <button
             class="btn btn-primary"
             id="readerErrorBack"
@@ -982,7 +1489,9 @@
           >
             Go back
           </button>
+
         </div>
+
       </div>
     `;
 
@@ -996,7 +1505,7 @@
         () => {
           location.href =
             user.role ===
-              'ADMIN'
+            'ADMIN'
               ? '/admin'
               : '/library';
         }
