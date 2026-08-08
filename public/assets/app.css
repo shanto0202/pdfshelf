@@ -1113,14 +1113,16 @@ svg {
 /* Reader */
 .reader-page {
   height: 100vh;
+  height: 100dvh;
   overflow: hidden;
   background: #2F3136;
 }
 
 .reader-shell {
   height: 100vh;
+  height: 100dvh;
   display: grid;
-  grid-template-rows: 62px minmax(0, 1fr);
+  grid-template-rows: 62px minmax(0, 1fr) auto;
 }
 
 .reader-bar {
@@ -1132,6 +1134,14 @@ svg {
   background: #2F3136;
   border-bottom: 1px solid rgba(255, 255, 255, .08);
   z-index: 50;
+}
+
+/* Safe-area (notch) support, isolated so it can never invalidate the
+   grid/layout rules above on browsers that don't understand env(). */
+@supports (padding: max(0px)) {
+  .reader-bar {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
 }
 
 .reader-bar .btn-secondary {
@@ -1148,28 +1158,22 @@ svg {
 .reader-right {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  min-width: 0;
+}
+
+.reader-left {
+  flex: 1 1 auto;
   min-width: 0;
 }
 
 .reader-right {
-  overflow-x: auto;
-  scrollbar-width: none;
-  flex-wrap: nowrap;
-}
-
-.reader-right::-webkit-scrollbar {
-  display: none;
-}
-
-.reader-right .rt-group,
-.reader-right .rt-divider,
-.reader-right .btn-icon {
   flex: 0 0 auto;
 }
 
 .reader-title {
   min-width: 0;
+  flex: 1 1 auto;
 }
 
 .reader-title {
@@ -1181,7 +1185,7 @@ svg {
 
 .reader-title strong {
   display: block;
-  max-width: 420px;
+  max-width: 100%;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1358,25 +1362,36 @@ svg {
   margin: 0 0 20px;
 }
 
-/* Reader top-bar tool groups (page nav / zoom / fit-width) */
+/* Reader toolbar (zoom / pages / view) */
+.reader-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 14px;
+  background: #2F3136;
+  border-top: 1px solid rgba(255, 255, 255, .08);
+  flex-wrap: wrap;
+}
+
 .rt-group {
   display: flex;
   align-items: center;
   gap: 2px;
   background: rgba(255, 255, 255, .06);
-  border-radius: 11px;
+  border-radius: 12px;
   padding: 3px;
 }
 
 .rt-btn {
-  width: 32px;
-  height: 32px;
+  width: 38px;
+  height: 38px;
   display: grid;
   place-items: center;
   border: 0;
   background: transparent;
   color: #EAF6F3;
-  border-radius: 8px;
+  border-radius: 9px;
   cursor: pointer;
   transition: background .16s;
 }
@@ -1390,8 +1405,8 @@ svg {
 }
 
 .rt-btn svg {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
 }
 
 .rt-btn:disabled {
@@ -1400,30 +1415,29 @@ svg {
 }
 
 .rt-zoom-label {
-  min-width: 42px;
+  min-width: 52px;
   text-align: center;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   color: #EAF6F3;
   user-select: none;
 }
 
 .rt-page-label {
-  min-width: 54px;
+  min-width: 74px;
   text-align: center;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   color: #EAF6F3;
   user-select: none;
-  padding: 0 4px;
+  padding: 0 6px;
 }
 
 .rt-divider {
   width: 1px;
-  height: 20px;
+  height: 22px;
   background: rgba(255, 255, 255, .12);
-  margin: 0 2px;
-  flex: 0 0 auto;
+  margin: 0 6px;
 }
 
 .skeleton {
@@ -1580,12 +1594,25 @@ svg {
   }
 
   .reader-bar {
-    padding: 0 8px;
-    gap: 6px;
+    padding: 0 10px;
+    gap: 8px;
+  }
+
+  .reader-left {
+    gap: 8px;
+  }
+
+  .reader-left img {
+    width: 26px;
+    height: 26px;
   }
 
   .reader-title strong {
-    max-width: 90px;
+    font-size: 13px;
+  }
+
+  .reader-title span {
+    display: none;
   }
 
   .reader-right .user-chip {
@@ -1596,48 +1623,74 @@ svg {
     grid-template-columns: repeat(2, 1fr);
   }
 
-  .reader-right {
+  .reader-scroll {
+    padding: 14px 8px 40px;
+  }
+
+  .reader-toolbar {
     gap: 4px;
+    padding: 8px 6px;
+    justify-content: space-between;
   }
 
-  .rt-page-label {
-    min-width: 48px;
-    font-size: 10px;
-  }
-
-  .rt-divider {
-    margin: 0 2px;
-  }
-}
-
-@media (max-width: 400px) {
-  .reader-title {
-    display: none;
-  }
-
-  .reader-right {
-    gap: 3px;
+  .rt-group {
+    padding: 2px;
   }
 
   .rt-btn {
-    width: 30px;
-    height: 30px;
-  }
-
-  .rt-btn svg {
-    width: 15px;
-    height: 15px;
-  }
-
-  .rt-zoom-label {
-    min-width: 34px;
-    font-size: 10px;
+    width: 34px;
+    height: 34px;
   }
 
   .rt-page-label {
+    min-width: 50px;
+    font-size: 11px;
+    padding: 0 3px;
+  }
+
+  .rt-zoom-label {
     min-width: 42px;
-    font-size: 10px;
-    padding: 0 2px;
+    font-size: 11px;
+  }
+
+  .rt-divider {
+    margin: 0 3px;
+  }
+}
+
+@supports (padding: max(0px)) {
+  @media (max-width: 640px) {
+    .reader-toolbar {
+      padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+    }
+  }
+}
+
+@media (max-width: 380px) {
+  .reader-bar {
+    gap: 6px;
+  }
+
+  .reader-left img {
+    display: none;
+  }
+
+  .btn.btn-icon {
+    width: 38px;
+    min-height: 38px;
+  }
+
+  .reader-title strong {
+    font-size: 12px;
+  }
+
+  .reader-toolbar {
+    gap: 2px;
+  }
+
+  .rt-btn {
+    width: 32px;
+    height: 32px;
   }
 
   .rt-divider {
@@ -1665,6 +1718,10 @@ body.reader-page {
 
 .reader-bar {
   background: #26282D !important;
+}
+
+.reader-toolbar {
+  background: #2F3136 !important;
 }
 
 .reader-page {

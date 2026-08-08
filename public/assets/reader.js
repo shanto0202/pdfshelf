@@ -105,13 +105,38 @@
     if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
+  // --- Point-anchored zoom helpers -----------------------------------
+  // Keeps whatever content is under the cursor/fingers fixed in place
+  // while the scale changes, instead of always zooming from the top.
+  function captureAnchor(clientX, clientY) {
+    const rect = scrollEl.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+    return {
+      x, y,
+      ratioX: scrollEl.scrollWidth ? (scrollEl.scrollLeft + x) / scrollEl.scrollWidth : 0,
+      ratioY: scrollEl.scrollHeight ? (scrollEl.scrollTop + y) / scrollEl.scrollHeight : 0,
+    };
+  }
+  function applyAnchor(anchor) {
+    scrollEl.scrollLeft = anchor.ratioX * scrollEl.scrollWidth - anchor.x;
+    scrollEl.scrollTop = anchor.ratioY * scrollEl.scrollHeight - anchor.y;
+  }
+  function viewportCenterClient() {
+    const rect = scrollEl.getBoundingClientRect();
+    return { clientX: rect.left + rect.width / 2, clientY: rect.top + rect.height / 2 };
+  }
+
   let zoomDebounce = null;
   function applyZoom(newScale, opts = {}) {
+    const center = opts.clientX != null ? { clientX: opts.clientX, clientY: opts.clientY } : viewportCenterClient();
+    const anchor = captureAnchor(center.clientX, center.clientY);
     currentScale = clampScale(newScale);
     setZoomLabel();
-    if (opts.immediate) { renderAllPages(currentScale); return; }
+    const commit = () => renderAllPages(currentScale).then(() => applyAnchor(anchor));
+    if (opts.immediate) { commit(); return; }
     clearTimeout(zoomDebounce);
-    zoomDebounce = setTimeout(() => renderAllPages(currentScale), 140);
+    zoomDebounce = setTimeout(commit, 140);
   }
 
   zoomInBtn.addEventListener('click', () => applyZoom(currentScale + 0.2, { immediate: true }));
@@ -124,21 +149,31 @@
   prevPageBtn.addEventListener('click', () => scrollToPage(Math.max(1, currentPage - 1)));
   nextPageBtn.addEventListener('click', () => scrollToPage(Math.min(pageCount, currentPage + 1)));
 
-  // Ctrl / Cmd + wheel to zoom (desktop trackpad / mouse)
+  // Ctrl / Cmd + wheel to zoom (desktop trackpad / mouse) — anchored at the cursor
   scrollEl.addEventListener('wheel', (e) => {
     if (!(e.ctrlKey || e.metaKey)) return;
     e.preventDefault();
     const delta = e.deltaY > 0 ? -0.1 : 0.1;
-    applyZoom(currentScale + delta);
+    applyZoom(currentScale + delta, { clientX: e.clientX, clientY: e.clientY });
   }, { passive: false });
 
-  // Pinch-to-zoom on touch devices
+  // Pinch-to-zoom on touch devices — anchored at the midpoint between the two fingers
   let pinchState = null;
   scrollEl.addEventListener('touchstart', (e) => {
     if (e.touches.length === 2) {
       const [a, b] = e.touches;
       const dist = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
-      pinchState = { startDist: dist, startScale: currentScale };
+      const midClientX = (a.clientX + b.clientX) / 2;
+      const midClientY = (a.clientY + b.clientY) / 2;
+      const pagesRect = pagesEl.getBoundingClientRect();
+      const originX = pagesRect.width ? ((midClientX - pagesRect.left) / pagesRect.width) * 100 : 50;
+      const originY = pagesRect.height ? ((midClientY - pagesRect.top) / pagesRect.height) * 100 : 0;
+      pagesEl.style.transformOrigin = `${originX}% ${originY}%`;
+      pinchState = {
+        startDist: dist,
+        startScale: currentScale,
+        anchor: captureAnchor(midClientX, midClientY),
+      };
     }
   }, { passive: true });
 
@@ -159,18 +194,23 @@
     if (pinchState && e.touches.length < 2) {
       pagesEl.style.transform = '';
       const finalScale = currentScale;
+      const anchor = pinchState.anchor;
       pinchState = null;
-      renderAllPages(finalScale);
+      renderAllPages(finalScale).then(() => {
+        applyAnchor(anchor);
+        pagesEl.style.transformOrigin = '';
+      });
     }
   }, { passive: true });
 
-  // Double-tap to zoom in/out on touch
+  // Double-tap to zoom in/out on touch — anchored at the tap point
   let lastTap = 0;
   scrollEl.addEventListener('touchend', (e) => {
     if (e.touches.length > 0) return;
     const now = Date.now();
-    if (now - lastTap < 300) {
-      applyZoom(currentScale >= 1.6 ? 1 : currentScale + 0.6, { immediate: true });
+    if (now - lastTap < 300 && e.changedTouches.length) {
+      const t = e.changedTouches[0];
+      applyZoom(currentScale >= 1.6 ? 1 : currentScale + 0.6, { immediate: true, clientX: t.clientX, clientY: t.clientY });
     }
     lastTap = now;
   });
